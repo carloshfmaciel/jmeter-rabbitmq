@@ -1,4 +1,4 @@
-package cn.i2cool.jmeter.protocol.amqp.gui;
+package com.zeroclue.jmeter.protocol.amqp.gui;
 
 import java.awt.Dimension;
 
@@ -11,7 +11,7 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.JLabeledTextArea;
 import org.apache.jorphan.gui.JLabeledTextField;
 
-import cn.i2cool.jmeter.protocol.amqp.AMQPPublisher;
+import com.zeroclue.jmeter.protocol.amqp.AMQPPublisher;
 
 /**
  * AMQP Sampler
@@ -29,6 +29,12 @@ public class AMQPPublisherGui extends AMQPSamplerGui {
 
 	private JPanel mainPanel;
 
+	/*
+	 * private static final String[] CONFIG_CHOICES = {"File", "Static"}; private
+	 * final JLabeledRadio configChoice = new JLabeledRadio("Message Source",
+	 * CONFIG_CHOICES); private final FilePanel messageFile = new
+	 * FilePanel("Filename", ALL_FILES);
+	 */
 	private JLabeledTextArea message = new JLabeledTextArea("Message Content");
 	private JLabeledTextField messageRoutingKey = new JLabeledTextField("Routing Key");
 	private JLabeledTextField messageType = new JLabeledTextField("Message Type");

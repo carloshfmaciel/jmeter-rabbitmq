@@ -1,4 +1,4 @@
-package cn.i2cool.jmeter.protocol.amqp.gui;
+package com.zeroclue.jmeter.protocol.amqp.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -18,7 +18,7 @@ import org.apache.jorphan.gui.JLabeledTextField;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
 
-import cn.i2cool.jmeter.protocol.amqp.AMQPSampler;
+import com.zeroclue.jmeter.protocol.amqp.AMQPSampler;
 
 public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 

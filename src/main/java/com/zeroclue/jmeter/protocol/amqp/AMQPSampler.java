@@ -1,4 +1,4 @@
-package cn.i2cool.jmeter.protocol.amqp;
+package com.zeroclue.jmeter.protocol.amqp;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -423,7 +423,8 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 			try {
 				connection = factory.newConnection(addresses);
 			} catch (TimeoutException e) {
-				log.error("factory.newConnection TimeoutException");
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		}
 
@@ -448,7 +449,8 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 				try {
 					channel.close();
 				} catch (TimeoutException e) {
-					log.error("channel.close TimeoutException");
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}
@@ -468,7 +470,8 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 				try {
 					channel.close();
 				} catch (TimeoutException e) {
-					log.error("channel.close TimeoutException");
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
 			}
 		}
