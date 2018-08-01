@@ -78,7 +78,7 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 		if (channel != null && channel.isOpen()) {
 			return true;
 		}
-		log.warn("channel {}, closed unexpectedly: {}", channel.getChannelNumber(), channel.getCloseReason());
+		log.warn("createChannel channel {}", channel);
 		channel = createChannel();
 		setChannel(channel);
 		boolean queueConfigured = (getQueue() != null && !getQueue().isEmpty());
