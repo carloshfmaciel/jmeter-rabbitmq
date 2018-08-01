@@ -31,6 +31,7 @@ public class AMQPConsumerGui extends AMQPSamplerGui {
 	/*
 	 * Helper method to set up the GUI screen
 	 */
+	@Override
 	protected void init() {
 		super.init();
 		prefetchCount.setPreferredSize(new Dimension(100, 25));
@@ -99,9 +100,7 @@ public class AMQPConsumerGui extends AMQPSamplerGui {
 		AMQPConsumer sampler = (AMQPConsumer) te;
 		sampler.clear();
 		configureTestElement(sampler);
-
 		super.modifyTestElement(sampler);
-
 		sampler.setReadResponse(readResponse.isSelected());
 		sampler.setPrefetchCount(prefetchCount.getText());
 

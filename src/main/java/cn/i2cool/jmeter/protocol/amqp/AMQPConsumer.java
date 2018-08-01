@@ -9,14 +9,14 @@ import org.apache.jmeter.samplers.Entry;
 import org.apache.jmeter.samplers.Interruptible;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.testelement.TestStateListener;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.ConsumerCancelledException;
-import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import com.rabbitmq.client.GetResponse;
 import com.rabbitmq.client.ShutdownSignalException;
 
 public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStateListener {
@@ -27,7 +27,7 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 
 	private static final long serialVersionUID = 7480863561320459091L;
 
-	private static final Logger log = LoggingManager.getLoggerForClass();
+	private static final Logger log = LoggerFactory.getLogger(AMQPConsumer.class);
 
 	// ++ These are JMX names, and must not be changed
 	private static final String PREFETCH_COUNT = "AMQPConsumer.PrefetchCount";
@@ -41,10 +41,9 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 	public static final String DELIVERY_TAG_PARAMETER = "Delivery Tag";
 
 	public static boolean DEFAULT_USE_TX = false;
-	private final static String USE_TX = "AMQPConsumer.UseTx";
+	private static final String USE_TX = "AMQPConsumer.UseTx";
 
 	private transient Channel channel;
-	private transient DefaultConsumer consumer;
 	private transient String consumerTag;
 
 	public AMQPConsumer() {
@@ -56,97 +55,55 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 	 */
 	@Override
 	public SampleResult sample(Entry entry) {
-		final SampleResult result = new SampleResult();
+		SampleResult result = new SampleResult();
+		result.sampleStart();
 		result.setSampleLabel(getName());
 		result.setSuccessful(false);
 		result.setResponseCode("500");
-
-		trace("AMQPConsumer.sample()");
-
 		try {
 			initChannel();
-
-			// only do this once per thread. Otherwise it slows down the consumption by appx
-			// 50%
-			if (consumer == null) {
-				log.info("Creating consumer");
-				consumer = new DefaultConsumer(channel) {
-					@Override
-					public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
-							byte[] body) throws IOException {
-						long deliveryTag = envelope.getDeliveryTag();
-						try {
-							if (getReadResponseAsBoolean()) {
-								String response = new String(body);
-								result.setSamplerData(response);
-								result.setResponseMessage(response);
-							} else {
-								result.setSamplerData("Read response is false.");
-							}
-
-							if (!autoAck())
-								channel.basicAck(envelope.getDeliveryTag(), false);
-
-							// commit the sample.
-							if (getUseTx()) {
-								channel.txCommit();
-							}
-
-							result.setResponseData("OK", null);
-							result.setDataType(SampleResult.TEXT);
-							result.setResponseHeaders(formatHeaders(envelope, properties));
-
-							result.setResponseCodeOK();
-
-							result.setSuccessful(true);
-
-						} catch (ShutdownSignalException e) {
-							consumer = null;
-							consumerTag = null;
-							log.warn("AMQP consumer failed to consume", e);
-							result.setResponseCode("400");
-							result.setResponseMessage(e.getMessage());
-							interrupt();
-						} catch (ConsumerCancelledException e) {
-							consumer = null;
-							consumerTag = null;
-							log.warn("AMQP consumer failed to consume", e);
-							result.setResponseCode("300");
-							result.setResponseMessage(e.getMessage());
-							interrupt();
-						} catch (IOException e) {
-							consumer = null;
-							consumerTag = null;
-							log.warn("AMQP consumer failed to consume", e);
-							result.setResponseCode("100");
-							result.setResponseMessage(e.getMessage());
-						} finally {
-							result.sampleEnd(); // End timimg
-						}
-
-						channel.basicAck(deliveryTag, false);
-
-					}
-				};
+			GetResponse get = channel.basicGet(getQueue(), autoAck());
+			if (getReadResponseAsBoolean()) {
+				String response = new String(get.getBody(), "UTF-8");
+				result.setSamplerData(response);
+				result.setResponseMessage(response);
+			} else {
+				result.setSamplerData("Read response is false.");
 			}
-			if (consumerTag == null) {
-				log.info("Starting basic consumer");
-				consumerTag = channel.basicConsume(getQueue(), autoAck(), consumer);
+			if (!autoAck())
+				channel.basicAck(get.getEnvelope().getDeliveryTag(), false);
+			if (getUseTx()) {
+				channel.txCommit();
 			}
-		} catch (
-
-		Exception ex) {
-			log.error("Failed to initialize channel", ex);
-			result.setResponseMessage(ex.toString());
-			return result;
+			result.setResponseData("OK", null);
+			result.setDataType(SampleResult.TEXT);
+			result.setResponseHeaders(formatHeaders(get.getEnvelope(), get.getProps()));
+			result.setResponseCodeOK();
+			result.setSuccessful(true);
+			channel.basicAck(get.getEnvelope().getDeliveryTag(), false);
+		} catch (ShutdownSignalException e) {
+			log.warn("AMQP consumer failed to ShutdownSignalException", e);
+			result.setResponseCode("400");
+			result.setResponseMessage(e.getMessage());
+			interrupt();
+		} catch (ConsumerCancelledException e) {
+			log.warn("AMQP consumer failed to ConsumerCancelledException", e);
+			result.setResponseCode("300");
+			result.setResponseMessage(e.getMessage());
+			interrupt();
+		} catch (IOException e) {
+			log.warn("AMQP consumer failed to IOException", e);
+			result.setResponseCode("100");
+			result.setResponseMessage(e.getMessage());
+		} catch (KeyManagementException e) {
+			log.warn("AMQP consumer failed to KeyManagementException", e);
+			result.setResponseMessage(e.getMessage());
+		} catch (NoSuchAlgorithmException e) {
+			log.warn("AMQP consumer failed to NoSuchAlgorithmException", e);
+			result.setResponseMessage(e.getMessage());
+		} finally {
+			result.sampleEnd(); // End timimg
 		}
-		result.setSampleLabel(getTitle());
-		/*
-		 * Perform the sampling
-		 */
-
-		trace("AMQPConsumer.sample ended");
-
 		return result;
 	}
 
@@ -273,7 +230,7 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 	public void testEnded() {
 
 		if (purgeQueue()) {
-			log.info("Purging queue " + getQueue());
+			log.info("Purging queue {}", getQueue());
 			try {
 				channel.queuePurge(getQueue());
 			} catch (IOException e) {
@@ -283,22 +240,7 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 	}
 
 	@Override
-	public void testEnded(String arg0) {
-
-	}
-
-	@Override
-	public void testStarted() {
-
-	}
-
-	@Override
-	public void testStarted(String arg0) {
-
-	}
-
 	public void cleanup() {
-
 		try {
 			if (consumerTag != null) {
 				channel.basicCancel(consumerTag);
@@ -306,21 +248,10 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 		} catch (IOException e) {
 			log.error("Couldn't safely cancel the sample " + consumerTag, e);
 		}
-
 		super.cleanup();
-
 	}
 
-	/*
-	 * Helper method
-	 */
-	private void trace(String s) {
-		String tl = getTitle();
-		String tn = Thread.currentThread().getName();
-		String th = this.toString();
-		log.debug(tn + " " + tl + " " + s + " " + th);
-	}
-
+	@Override
 	protected boolean initChannel() throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		boolean ret = super.initChannel();
 		channel.basicQos(getPrefetchCountAsInt());
@@ -334,16 +265,31 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 		Map<String, Object> headers = properties.getHeaders();
 		StringBuilder sb = new StringBuilder();
 		sb.append(TIMESTAMP_PARAMETER).append(": ")
-				.append(properties.getTimestamp() != null && properties.getTimestamp() != null
-						? properties.getTimestamp().getTime()
-						: "")
-				.append("\n");
+				.append(properties.getTimestamp() != null ? properties.getTimestamp().getTime() : "").append("\n");
 		sb.append(EXCHANGE_PARAMETER).append(": ").append(envelope.getExchange()).append("\n");
 		sb.append(ROUTING_KEY_PARAMETER).append(": ").append(envelope.getRoutingKey()).append("\n");
 		sb.append(DELIVERY_TAG_PARAMETER).append(": ").append(envelope.getDeliveryTag()).append("\n");
-		for (String key : headers.keySet()) {
-			sb.append(key).append(": ").append(headers.get(key)).append("\n");
+		for (Map.Entry<String, Object> entry : headers.entrySet()) {
+			sb.append(entry.getKey()).append(": ").append(headers.get(entry.getKey())).append("\n");
 		}
 		return sb.toString();
+	}
+
+	@Override
+	public void testStarted() {
+		log.info("testStarted");
+
+	}
+
+	@Override
+	public void testStarted(String host) {
+		log.info("testStarted  {}", host);
+
+	}
+
+	@Override
+	public void testEnded(String host) {
+		log.info("testEnded  {}", host);
+
 	}
 }

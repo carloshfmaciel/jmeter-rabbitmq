@@ -3,7 +3,6 @@ package cn.i2cool.jmeter.protocol.amqp;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,10 +11,9 @@ import java.util.concurrent.TimeoutException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.samplers.AbstractSampler;
 import org.apache.jmeter.testelement.ThreadListener;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Address;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -23,6 +21,10 @@ import com.rabbitmq.client.ConnectionFactory;
 
 public abstract class AMQPSampler extends AbstractSampler implements ThreadListener {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public static final boolean DEFAULT_EXCHANGE_DURABLE = true;
 	public static final boolean DEFAULT_EXCHANGE_AUTO_DELETE = true;
 	public static final boolean DEFAULT_EXCHANGE_REDECLARE = false;
@@ -37,7 +39,7 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 	public static final int DEFAULT_ITERATIONS = 1;
 	public static final String DEFAULT_ITERATIONS_STRING = Integer.toString(DEFAULT_ITERATIONS);
 
-	private static final Logger log = LoggingManager.getLoggerForClass();
+	private static final Logger log = LoggerFactory.getLogger(AMQPSampler.class);
 
 	// ++ These are JMX names, and must not be changed
 	protected static final String EXCHANGE = "AMQPSampler.Exchange";
@@ -73,50 +75,33 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 
 	protected boolean initChannel() throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		Channel channel = getChannel();
-
 		if (channel != null && !channel.isOpen()) {
-			log.warn("channel " + channel.getChannelNumber() + " closed unexpectedly: ", channel.getCloseReason());
-			channel = null; // so we re-open it below
+			log.warn("channel {}, closed unexpectedly: {}", channel.getChannelNumber(), channel.getCloseReason());
 		}
-
-		if (channel == null) {
-			channel = createChannel();
-			setChannel(channel);
-
-			// TODO: Break out queue binding
-			boolean queueConfigured = (getQueue() != null && !getQueue().isEmpty());
-
+		channel = createChannel();
+		setChannel(channel);
+		boolean queueConfigured = (getQueue() != null && !getQueue().isEmpty());
+		if (queueConfigured) {
+			if (getQueueRedeclare()) {
+				deleteQueue();
+			}
+			channel.queueDeclare(getQueue(), queueDurable(), queueExclusive(), queueAutoDelete(), getQueueArguments());
+		}
+		if (!StringUtils.isBlank(getExchange())) { // Use a named exchange
+			if (getExchangeRedeclare()) {
+				deleteExchange();
+			}
+			channel.exchangeDeclare(getExchange(), getExchangeType(), getExchangeDurable(), getExchangeAutoDelete(),
+					Collections.<String, Object>emptyMap());
 			if (queueConfigured) {
-				if (getQueueRedeclare()) {
-					deleteQueue();
-				}
-
-				AMQP.Queue.DeclareOk declareQueueResp = channel.queueDeclare(getQueue(), queueDurable(),
-						queueExclusive(), queueAutoDelete(), getQueueArguments());
+				channel.queueBind(getQueue(), getExchange(), getRoutingKey());
 			}
-
-			if (!StringUtils.isBlank(getExchange())) { // Use a named exchange
-				if (getExchangeRedeclare()) {
-					deleteExchange();
-				}
-
-				AMQP.Exchange.DeclareOk declareExchangeResp = channel.exchangeDeclare(getExchange(), getExchangeType(),
-						getExchangeDurable(), getExchangeAutoDelete(), Collections.<String, Object>emptyMap());
-				if (queueConfigured) {
-					channel.queueBind(getQueue(), getExchange(), getRoutingKey());
-				}
-			}
-
-			log.info("bound to:" + "\n\t queue: " + getQueue() + "\n\t exchange: " + getExchange()
-					+ "\n\t exchange(D)? " + getExchangeDurable() + "\n\t routing key: " + getRoutingKey()
-					+ "\n\t arguments: " + getQueueArguments());
-
 		}
 		return true;
 	}
 
 	private Map<String, Object> getQueueArguments() {
-		Map<String, Object> arguments = new HashMap<String, Object>();
+		Map<String, Object> arguments = new HashMap<>();
 
 		if (getMessageTTL() != null && !getMessageTTL().isEmpty())
 			arguments.put("x-message-ttl", getMessageTTLAsInt());
@@ -377,8 +362,6 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 
 	protected void cleanup() {
 		try {
-			// getChannel().close(); // closing the connection will close the channel if
-			// it's still open
 			if (connection != null && connection.isOpen())
 				connection.close();
 		} catch (IOException e) {
@@ -394,12 +377,11 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 
 	@Override
 	public void threadStarted() {
-
+		log.info("AMQPSampler.threadFinished started");
 	}
 
 	protected Channel createChannel() throws IOException, NoSuchAlgorithmException, KeyManagementException {
-		log.info("Creating channel " + getVirtualHost() + ":" + getPortAsInt());
-
+		log.info("Creating channel {} - {}", getVirtualHost(), getPortAsInt());
 		if (connection == null || !connection.isOpen()) {
 			factory.setConnectionTimeout(getTimeoutAsInt());
 			factory.setVirtualHost(getVirtualHost());
@@ -408,29 +390,20 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 			if (connectionSSL()) {
 				factory.useSslProtocol("TLS");
 			}
-
-			log.info("RabbitMQ ConnectionFactory using:" + "\n\t virtual host: " + getVirtualHost() + "\n\t host: "
-					+ getHost() + "\n\t port: " + getPort() + "\n\t username: " + getUsername() + "\n\t password: "
-					+ getPassword() + "\n\t timeout: " + getTimeout() + "\n\t heartbeat: "
-					+ factory.getRequestedHeartbeat() + "\nin " + this);
-
 			String[] hosts = getHost().split(",");
 			Address[] addresses = new Address[hosts.length];
 			for (int i = 0; i < hosts.length; i++) {
 				addresses[i] = new Address(hosts[i], getPortAsInt());
 			}
-			log.info("Using hosts: " + Arrays.toString(hosts) + " addresses: " + Arrays.toString(addresses));
 			try {
 				connection = factory.newConnection(addresses);
 			} catch (TimeoutException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.error("factory.newConnection TimeoutException", e);
 			}
 		}
-
 		Channel channel = connection.createChannel();
 		if (!channel.isOpen()) {
-			log.fatalError("Failed to open channel: " + channel.getCloseReason().getLocalizedMessage());
+			log.error("Failed to open channel: {}", channel.getCloseReason().getLocalizedMessage());
 		}
 		return channel;
 	}
@@ -439,7 +412,7 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 		// use a different channel since channel closes on exception.
 		Channel channel = createChannel();
 		try {
-			log.info("Deleting queue " + getQueue());
+			log.info("Deleting queue {}", getQueue());
 			channel.queueDelete(getQueue());
 		} catch (Exception ex) {
 			log.debug(ex.toString(), ex);
@@ -449,8 +422,7 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 				try {
 					channel.close();
 				} catch (TimeoutException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					log.error("channel.close TimeoutException");
 				}
 			}
 		}
@@ -460,7 +432,7 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 		// use a different channel since channel closes on exception.
 		Channel channel = createChannel();
 		try {
-			log.info("Deleting exchange " + getExchange());
+			log.info("Deleting exchange {}", getExchange());
 			channel.exchangeDelete(getExchange());
 		} catch (Exception ex) {
 			log.debug(ex.toString(), ex);
@@ -470,8 +442,7 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 				try {
 					channel.close();
 				} catch (TimeoutException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					log.error("channel.close TimeoutException");
 				}
 			}
 		}

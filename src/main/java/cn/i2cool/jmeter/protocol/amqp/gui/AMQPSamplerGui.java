@@ -15,8 +15,8 @@ import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.JLabeledChoice;
 import org.apache.jorphan.gui.JLabeledTextField;
-import org.apache.jorphan.logging.LoggingManager;
-import org.apache.log.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cn.i2cool.jmeter.protocol.amqp.AMQPSampler;
 
@@ -24,7 +24,7 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final Logger log = LoggingManager.getLoggerForClass();
+	private static final Logger log = LoggerFactory.getLogger(AMQPSamplerGui.class);
 
 	protected JLabeledTextField exchange = new JLabeledTextField("Exchange");
 	private final JCheckBox exchangeRedeclare = new JCheckBox("Redeclare?", AMQPSampler.DEFAULT_EXCHANGE_REDECLARE);
@@ -48,7 +48,7 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 	protected JLabeledTextField timeout = new JLabeledTextField("Timeout");
 	protected JLabeledTextField username = new JLabeledTextField("Username");
 	protected JLabeledTextField password = new JLabeledTextField("Password");
-	private final JCheckBox SSL = new JCheckBox("SSL?", false);
+	private final JCheckBox ssl = new JCheckBox("SSL?", false);
 
 	private final JLabeledTextField iterations = new JLabeledTextField("Number of samples to Aggregate");
 
@@ -86,7 +86,7 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 		port.setText(sampler.getPort());
 		username.setText(sampler.getUsername());
 		password.setText(sampler.getPassword());
-		SSL.setSelected(sampler.connectionSSL());
+		ssl.setSelected(sampler.connectionSSL());
 		log.info("AMQPSamplerGui.configure() called");
 	}
 
@@ -117,7 +117,7 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 		port.setText(AMQPSampler.DEFAULT_PORT_STRING);
 		username.setText("guest");
 		password.setText("guest");
-		SSL.setSelected(false);
+		ssl.setSelected(false);
 	}
 
 	/**
@@ -151,9 +151,7 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 		sampler.setPort(port.getText());
 		sampler.setUsername(username.getText());
 		sampler.setPassword(password.getText());
-		sampler.setConnectionSSL(SSL.isSelected());
-		log.info("AMQPSamplerGui.modifyTestElement() called, set user/pass to " + username.getText() + "/"
-				+ password.getText() + " on sampler " + sampler);
+		sampler.setConnectionSSL(ssl.isSelected());
 	}
 
 	protected void init() {
@@ -174,7 +172,8 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 	}
 
 	private Component makeCommonPanel() {
-		GridBagConstraints gridBagConstraints, gridBagConstraintsCommon;
+		GridBagConstraints gridBagConstraints;
+		GridBagConstraints gridBagConstraintsCommon;
 
 		gridBagConstraintsCommon = new GridBagConstraints();
 		gridBagConstraintsCommon.fill = GridBagConstraints.HORIZONTAL;
@@ -272,7 +271,7 @@ public abstract class AMQPSamplerGui extends AbstractSamplerGui {
 
 		gridBagConstraints.gridx = 1;
 		gridBagConstraints.gridy = 2;
-		serverSettings.add(SSL, gridBagConstraints);
+		serverSettings.add(ssl, gridBagConstraints);
 
 		gridBagConstraints.gridx = 0;
 		gridBagConstraints.gridy = 3;

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration status="WARN">
+	<properties>
+		<property name="LOG_HOME">/data/server-logs/jemeter-rabbitmq</property>
+	</properties>
+	<!-- 先定义所有的appender -->
+	<appenders>
+		<!-- 这个输出控制台的配置 -->
+		<Console name="Console" target="SYSTEM_OUT">
+			<ThresholdFilter level="info" onMatch="ACCEPT"
+				onMismatch="DENY" />
+			<PatternLayout
+				pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n" />
+		</Console>
+		<!--Info级别日志输出 -->
+		<RollingRandomAccessFile name="InfoLog"
+			fileName="${LOG_HOME}/info.log"
+			filePattern="${LOG_HOME}/info-%d{yyyy-MM-dd}.log">
+			<Filters>
+				<ThresholdFilter level="warn" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="info" onMatch="ACCEPT"
+					onMismatch="DENY" />
+			</Filters>
+			<PatternLayout
+				pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy modulate="true"
+					interval="1" />
+			</Policies>
+			<DefaultRolloverStrategy>
+				<Delete basePath="${LOG_HOME}" maxDepth="1">
+					<IfFileName glob="*.log" />
+					<IfLastModified age="3d" />
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile>
+		<!--Error级别日志输出 -->
+		<RollingRandomAccessFile name="ErrorLog"
+			fileName="${LOG_HOME}/error/error.log"
+			filePattern="${LOG_HOME}/error/error-%d{yyyy-MM-dd}.log">
+			<Filters>
+				<ThresholdFilter level="fatal" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="warn" onMatch="ACCEPT"
+					onMismatch="DENY" />
+			</Filters>
+			<PatternLayout
+				pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%thread][%file:%line] - %msg%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy modulate="true"
+					interval="1" />
+			</Policies>
+			<DefaultRolloverStrategy>
+				<Delete basePath="${LOG_HOME}" maxDepth="1">
+					<IfFileName glob="*.log" />
+					<IfLastModified age="3d" />
+				</Delete>
+			</DefaultRolloverStrategy>
+		</RollingRandomAccessFile>
+	</appenders>
+
+	<!-- 然后定义logger，只有定义了logger并引入的appender，appender才会生效 -->
+	<loggers>
+		<!-- 建立一个默认的root的logger -->
+		<root level="trace">
+			<appender-ref ref="Console" />
+			<appender-ref ref="InfoLog" />
+			<appender-ref ref="ErrorLog" />
+		</root>
+	</loggers>
+</configuration>  
