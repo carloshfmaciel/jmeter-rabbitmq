@@ -1,6 +1,5 @@
-package com.zeroclue.jmeter.protocol.amqp.gui;
+package cn.i2cool.jmeter.protocol.amqp.gui;
 
-import com.zeroclue.jmeter.protocol.amqp.AMQPSampler;
 import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.samplers.gui.AbstractSamplerGui;
 import org.apache.jmeter.testelement.TestElement;
@@ -8,6 +7,8 @@ import org.apache.jorphan.gui.JLabeledChoice;
 import org.apache.jorphan.gui.JLabeledTextField;
 import org.apache.jorphan.logging.LoggingManager;
 import org.apache.log.Logger;
+
+import cn.i2cool.jmeter.protocol.amqp.AMQPSampler;
 
 import javax.swing.*;
 import java.awt.*;

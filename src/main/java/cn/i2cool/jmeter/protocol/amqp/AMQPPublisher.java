@@ -1,4 +1,4 @@
-package com.zeroclue.jmeter.protocol.amqp;
+package cn.i2cool.jmeter.protocol.amqp;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;

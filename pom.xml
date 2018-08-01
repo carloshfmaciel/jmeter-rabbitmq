@@ -2,10 +2,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<groupId>jmeter</groupId>
 	<artifactId>rabbitmq</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>rabbitmq</name>
@@ -13,6 +12,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jmeter-version>4.0</jmeter-version>
+		<rabbit-version>5.1.2</rabbit-version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -27,11 +27,33 @@
 			<version>${jmeter-version}</version>
 			<scope>provided</scope>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/kg.apc/jmeter-plugins-cmn-jmeter -->
+		<!-- https://mvnrepository.com/artifact/com.rabbitmq/amqp-client -->
 		<dependency>
-			<groupId>kg.apc</groupId>
-			<artifactId>jmeter-plugins-cmn-jmeter</artifactId>
-			<version>0.5</version>
+			<groupId>com.rabbitmq</groupId>
+			<artifactId>amqp-client</artifactId>
+			<version>${rabbit-version}</version>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<skipTests>true</skipTests>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<repositories>
+		<repository>
+			<id>releases</id>
+			<name>releases</name>
+			<url>http://maven.1datatech.cn/repository/maven-public/</url>
+		</repository>
+	</repositories>
 </project>
