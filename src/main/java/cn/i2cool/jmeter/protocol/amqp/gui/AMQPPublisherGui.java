@@ -1,4 +1,4 @@
-package com.zeroclue.jmeter.protocol.amqp.gui;
+package cn.i2cool.jmeter.protocol.amqp.gui;
 
 import java.awt.Dimension;
 
@@ -11,7 +11,7 @@ import org.apache.jmeter.testelement.TestElement;
 import org.apache.jorphan.gui.JLabeledTextArea;
 import org.apache.jorphan.gui.JLabeledTextField;
 
-import com.zeroclue.jmeter.protocol.amqp.AMQPPublisher;
+import cn.i2cool.jmeter.protocol.amqp.AMQPPublisher;
 
 /**
  * AMQP Sampler

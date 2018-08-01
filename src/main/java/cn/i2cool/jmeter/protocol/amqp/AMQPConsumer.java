@@ -1,4 +1,4 @@
-package com.zeroclue.jmeter.protocol.amqp;
+package cn.i2cool.jmeter.protocol.amqp;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -56,7 +56,7 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 	 */
 	@Override
 	public SampleResult sample(Entry entry) {
-		SampleResult result = new SampleResult();
+		final SampleResult result = new SampleResult();
 		result.setSampleLabel(getName());
 		result.setSuccessful(false);
 		result.setResponseCode("500");

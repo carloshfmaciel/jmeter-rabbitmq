@@ -3,8 +3,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>jmeter</groupId>
-	<artifactId>rabbitmq</artifactId>
-	<version>1.0.0</version>
+	<artifactId>ApacheJMeter</artifactId>
+	<version>rabbitmq</version>
 	<packaging>jar</packaging>
 
 	<name>rabbitmq</name>
@@ -32,6 +32,7 @@
 			<groupId>com.rabbitmq</groupId>
 			<artifactId>amqp-client</artifactId>
 			<version>${rabbit-version}</version>
+			<scope>provided</scope>
 		</dependency>
 	</dependencies>
 	<build>
