@@ -32,7 +32,7 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
 
 	private static final long serialVersionUID = -8420658040465788497L;
 
-	private static final Logger log = LoggerFactory.getLogger(AMQPConsumer.class);
+	private static final Logger log = LoggerFactory.getLogger(AMQPPublisher.class);
 
 	// ++ These are JMX names, and must not be changed
 	private static final String MESSAGE = "AMQPPublisher.Message";

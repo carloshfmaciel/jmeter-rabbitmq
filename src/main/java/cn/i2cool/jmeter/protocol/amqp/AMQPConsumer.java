@@ -70,17 +70,17 @@ public class AMQPConsumer extends AMQPSampler implements Interruptible, TestStat
 			} else {
 				result.setSamplerData("Read response is false.");
 			}
-			if (!autoAck())
-				channel.basicAck(get.getEnvelope().getDeliveryTag(), false);
-			if (getUseTx()) {
-				channel.txCommit();
-			}
+
 			result.setResponseData("OK", null);
 			result.setDataType(SampleResult.TEXT);
 			result.setResponseHeaders(formatHeaders(get.getEnvelope(), get.getProps()));
 			result.setResponseCodeOK();
 			result.setSuccessful(true);
-			channel.basicAck(get.getEnvelope().getDeliveryTag(), false);
+			if (!autoAck())
+				channel.basicAck(get.getEnvelope().getDeliveryTag(), false);
+			if (getUseTx()) {
+				channel.txCommit();
+			}
 		} catch (ShutdownSignalException e) {
 			log.warn("AMQP consumer failed to ShutdownSignalException", e);
 			result.setResponseCode("400");
