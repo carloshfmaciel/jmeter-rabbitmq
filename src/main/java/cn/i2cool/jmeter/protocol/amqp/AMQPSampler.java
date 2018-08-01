@@ -75,9 +75,10 @@ public abstract class AMQPSampler extends AbstractSampler implements ThreadListe
 
 	protected boolean initChannel() throws IOException, NoSuchAlgorithmException, KeyManagementException {
 		Channel channel = getChannel();
-		if (channel != null && !channel.isOpen()) {
-			log.warn("channel {}, closed unexpectedly: {}", channel.getChannelNumber(), channel.getCloseReason());
+		if (channel != null && channel.isOpen()) {
+			return true;
 		}
+		log.warn("channel {}, closed unexpectedly: {}", channel.getChannelNumber(), channel.getCloseReason());
 		channel = createChannel();
 		setChannel(channel);
 		boolean queueConfigured = (getQueue() != null && !getQueue().isEmpty());
