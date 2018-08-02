@@ -1,5 +1,8 @@
 # Jmeter RabbitMQ Test Plugin
 
+## 说明
+基于 JMeter-Rabbit-AMQP[https://github.com/jlavallee/JMeter-Rabbit-AMQP.git]修改（无法支持新版Rabbit）
+
 ## 使用
 
 打包生成
