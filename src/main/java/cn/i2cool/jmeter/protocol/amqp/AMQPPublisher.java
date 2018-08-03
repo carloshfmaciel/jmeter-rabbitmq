@@ -88,7 +88,7 @@ public class AMQPPublisher extends AMQPSampler implements Interruptible {
 				channel.txCommit();
 			}
 			result.setSamplerData(data);
-			result.setResponseData(new String(messageBytes, "UTF-8"), null);
+			result.setResponseData(new String(messageBytes, "UTF-8"), "UTF-8");
 			result.setDataType(SampleResult.TEXT);
 			result.setResponseCodeOK();
 			result.setResponseMessage("OK");
